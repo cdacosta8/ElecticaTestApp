@@ -2,8 +2,10 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { MAT_DATE_RANGE_SELECTION_STRATEGY } from '@angular/material/datepicker';
 import { DateTime } from 'luxon';
+import { Subject } from 'rxjs';
 import { ITableTimeList } from '../../interfaces/table-time-list';
 import { OneWeekRangeSelectionStrategyService } from '../../services/one-week-range-selection-strategy.service';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-table-time-list',
@@ -26,6 +28,7 @@ export class TableTimeListComponent implements OnInit {
   });
 
   private originalData: any[] | null = []
+  private destroy$: Subject<void> = new Subject<void>();
 
   @Input() public set tableTimeList(timeList: any[] | null) {
     this.originalData = timeList;
@@ -39,9 +42,15 @@ export class TableTimeListComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.rangeForm.valueChanges.subscribe(() => {
-      this.transformData(this.originalData);
-    })
+    this.rangeForm.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.transformData(this.originalData);
+      })
+  }
+
+    ngOnDestroy(): void {
+      this.destroy$.next();
+      this.destroy$.complete();
   }
   
   // Function to transform and filter the array
